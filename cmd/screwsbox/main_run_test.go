@@ -86,6 +86,45 @@ func TestRunGracefulShutdown(t *testing.T) {
 	}
 }
 
+func TestRunInvalidTrustedProxyCIDR(t *testing.T) {
+	tmpDir := t.TempDir()
+	t.Setenv("DB_PATH", filepath.Join(tmpDir, "run_test.db"))
+	t.Setenv("REDIS_URL", "")
+	t.Setenv("SESSION_TTL", "1h")
+	t.Setenv("OIDC_ISSUER", "")
+	t.Setenv("TRUSTED_PROXY_CIDR", "not-a-cidr")
+
+	err := run()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid TRUSTED_PROXY_CIDR")
+}
+
+func TestRunTrustsProxyCIDR(t *testing.T) {
+	tmpDir := t.TempDir()
+	t.Setenv("DB_PATH", filepath.Join(tmpDir, "run_test.db"))
+	t.Setenv("PORT", "0") // bind any free port
+	t.Setenv("REDIS_URL", "")
+	t.Setenv("SESSION_TTL", "1h")
+	t.Setenv("OIDC_ISSUER", "")
+	t.Setenv("TRUSTED_PROXY_CIDR", "127.0.0.1/32, 10.0.0.0/8")
+
+	errCh := make(chan error, 1)
+	go func() {
+		errCh <- run()
+	}()
+
+	// Let run() install its SIGTERM handler and log the "trusting" branch.
+	time.Sleep(200 * time.Millisecond)
+	require.NoError(t, syscall.Kill(os.Getpid(), syscall.SIGTERM))
+
+	select {
+	case err := <-errCh:
+		require.NoError(t, err)
+	case <-time.After(10 * time.Second):
+		t.Fatal("run() did not return within 10s after SIGTERM")
+	}
+}
+
 func TestSeedOIDCFromEnvSaveError(t *testing.T) {
 	tmpDir := t.TempDir()
 	dbPath := filepath.Join(tmpDir, "seed_err.db")

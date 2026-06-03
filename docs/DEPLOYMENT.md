@@ -138,15 +138,30 @@ The GitHub Actions release workflow (`.github/workflows/release.yml`) runs on pu
 
 Screws Box listens on `0.0.0.0:{PORT}` and does not handle TLS. For production, place it behind a reverse proxy (nginx, Caddy, Traefik) that terminates TLS.
 
-The app reads `X-Forwarded-Proto` to detect HTTPS for secure cookie flags, and uses chi's `middleware.RealIP` to extract the client IP from proxy headers.
+The app reads `X-Forwarded-Proto` to detect HTTPS for secure cookie flags.
+
+### Client IP behind a proxy
+
+Rate limiting and request logging key on the client IP. By default the app uses the **direct TCP connection address** — correct when nothing sits in front of it, but behind a proxy that address is the proxy's, so every client would share a single rate-limit bucket.
+
+To make the app trust your proxy's `X-Forwarded-For` header, set `TRUSTED_PROXY_CIDR` to the proxy's IP range(s):
+
+```
+# nginx/Caddy/Traefik on the same host
+TRUSTED_PROXY_CIDR=127.0.0.1/32
+# or a Docker / Kubernetes network range
+TRUSTED_PROXY_CIDR=10.0.0.0/8
+```
+
+The app walks `X-Forwarded-For` right-to-left, skipping the trusted hops, and takes the first untrusted entry as the client — so a client cannot spoof its IP by injecting header values. Configure your proxy to **set/overwrite** `X-Forwarded-For` rather than blindly forwarding a client-supplied value. An invalid CIDR aborts startup instead of silently weakening trust.
+
+> This replaces the previous use of chi's `middleware.RealIP`, which was deprecated upstream as vulnerable to IP spoofing.
 
 Configure the OIDC callback URL to match your external URL:
 
 ```
 https://screws.example.com/auth/callback
 ```
-
-<!-- VERIFY: Confirm there are no additional proxy headers required beyond X-Forwarded-Proto and X-Real-IP -->
 
 ## Data Backup
 
