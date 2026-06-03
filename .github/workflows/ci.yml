@@ -1,10 +1,39 @@
-name: Validate
+name: CI
 
+# Renamed from the former "PR" workflow. Runs on push to master too (not just PRs)
+# so master is validated on every commit and the README badge reflects master.
+#
+# The validation jobs (lint / test / coverage / build / vulnerability) are defined
+# directly in this workflow. They previously lived in a reusable `_validate.yml`
+# called via a single `validate` job, which surfaced the checks as `validate / lint`,
+# `validate / test`, etc. — GitHub prefixes a reusable workflow's jobs with the
+# caller job's id (`<caller-job> / <reusable-job>`). Inlining them removes that
+# indirection so the checks now appear as bare `lint`, `test`, `coverage`, `build`,
+# `vulnerability`.
+#
+# IMPORTANT — branch ruleset: the master ruleset's required status checks must match
+# these names EXACTLY. After this change, update the ruleset's required checks:
+#   validate / lint     -> lint
+#   validate / test     -> test
+#   validate / coverage -> coverage
+#   validate / build    -> build
+#   validate / vuln     -> vulnerability
+# Otherwise PRs stay blocked forever waiting on contexts that will never post again.
+#
+# No paths-ignore on purpose: with required checks, a docs-only PR that skipped CI
+# would never post the required contexts and would stay blocked.
 on:
-  workflow_call:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
 
 permissions:
   contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   lint:
@@ -103,3 +132,29 @@ jobs:
 
       - name: Build binary
         run: go build -ldflags="-s -w" ./cmd/screwsbox
+
+  vulnerability:
+    name: vulnerability
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.0
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.0.0
+        with:
+          go-version-file: go.mod
+
+      # govulncheck scans dependencies + the Go stdlib for known advisories.
+      # Inlined (go install) rather than the golang/govulncheck-action composite,
+      # which transitively uses tag-pinned actions. Surfaces as the `vulnerability`
+      # check; add it to the master ruleset's required checks to make it blocking.
+      #
+      # NOTE: stdlib advisories are gated on the Go toolchain version, which setup-go
+      # derives from go.mod's `go` directive. Keep that directive on a patched patch
+      # release (see go.mod) or this job flags fixed-in-newer-Go stdlib CVEs.
+      - name: Install govulncheck
+        run: go install golang.org/x/vuln/cmd/govulncheck@latest
+
+      - name: Run govulncheck
+        run: govulncheck ./...
