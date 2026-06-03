@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.10.1](https://github.com/egeek-tech/screws-box/compare/v1.10.0...v1.10.1) (2026-06-03)
+
+
+### Documentation
+
+* add community health files and fix post-migration references ([82e8288](https://github.com/egeek-tech/screws-box/commit/82e8288b9c6cdb23b94faba3213ceedebd259af9))
+* add community health files and fix post-migration references ([6da84b0](https://github.com/egeek-tech/screws-box/commit/6da84b0fc60dd430b90c863db2020d42f6d3536d))
+
 ## [1.10.0](https://github.com/egeek-tech/screws-box/compare/v1.9.1...v1.10.0) (2026-06-03)
 
 
