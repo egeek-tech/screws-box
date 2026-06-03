@@ -14,11 +14,32 @@ type Server struct {
 	store    StoreService
 	sessions *session.Manager
 	version  string
+	// trustedProxyCIDRs lists the reverse-proxy IP ranges in front of the
+	// server. When non-empty the client IP is read from X-Forwarded-For
+	// (skipping these hops); when empty it is the direct connection address.
+	trustedProxyCIDRs []string
 }
 
-// NewServer creates a Server with the given dependencies.
-func NewServer(store StoreService, sessions *session.Manager, version string) *Server {
-	return &Server{store: store, sessions: sessions, version: version}
+// Option configures a Server.
+type Option func(*Server)
+
+// WithTrustedProxyCIDRs declares the reverse-proxy IP ranges (CIDRs) sitting
+// in front of the server. When set, the client IP used for rate limiting and
+// logging is extracted from X-Forwarded-For, walking right-to-left and skipping
+// these trusted hops so clients cannot spoof their address. When left empty the
+// client IP is the direct TCP connection address (safe when no proxy is in
+// front). Each CIDR must already be validated by the caller.
+func WithTrustedProxyCIDRs(cidrs []string) Option {
+	return func(s *Server) { s.trustedProxyCIDRs = cidrs }
+}
+
+// NewServer creates a Server with the given dependencies and options.
+func NewServer(store StoreService, sessions *session.Manager, version string, opts ...Option) *Server {
+	srv := &Server{store: store, sessions: sessions, version: version}
+	for _, opt := range opts {
+		opt(srv)
+	}
+	return srv
 }
 
 // Router creates the chi router with all routes.
@@ -30,7 +51,7 @@ func (srv *Server) Router() http.Handler {
 
 	// All application routes with full middleware stack.
 	r.Group(func(r chi.Router) {
-		r.Use(middleware.RealIP)
+		r.Use(srv.clientIPMiddleware())
 		r.Use(middleware.Logger)
 		r.Use(middleware.Recoverer)
 		r.Use(middleware.RequestID)

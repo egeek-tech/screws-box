@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/go-chi/chi/v5/middleware"
 	"golang.org/x/time/rate"
 )
 
@@ -61,12 +62,36 @@ func (ipl *ipLimiter) cleanup() {
 	}
 }
 
+// clientIPMiddleware extracts the real client IP into the request context. It
+// replaces chi's deprecated middleware.RealIP, which trusted any client-supplied
+// X-Forwarded-For / X-Real-IP header and was therefore spoofable
+// (GHSA-3fxj-6jh8-hvhx). The extracted IP is read back via clientIP.
+//
+// When trusted proxy CIDRs are configured the IP comes from X-Forwarded-For,
+// walking right-to-left and skipping the trusted hops so a client cannot forge
+// its address. With no proxies declared the IP is the direct TCP connection
+// address — safe when the server is reachable directly (dev, or no proxy).
+func (srv *Server) clientIPMiddleware() func(http.Handler) http.Handler {
+	if len(srv.trustedProxyCIDRs) > 0 {
+		// Panics at startup on an invalid CIDR; main validates them first.
+		return middleware.ClientIPFromXFF(srv.trustedProxyCIDRs...)
+	}
+	return middleware.ClientIPFromRemoteAddr
+}
+
+// clientIP returns the client IP set by clientIPMiddleware. It falls back to the
+// raw connection address when no IP was extracted (e.g. a fail-closed XFF chain,
+// or the middleware not running) so rate-limit buckets degrade gracefully rather
+// than collapsing every request onto one empty key.
 func clientIP(r *http.Request) string {
-	ip, _, err := net.SplitHostPort(r.RemoteAddr)
+	if ip := middleware.GetClientIPAddr(r.Context()); ip.IsValid() {
+		return ip.String()
+	}
+	host, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {
 		return r.RemoteAddr
 	}
-	return ip
+	return host
 }
 
 // newRateLimitAPI creates middleware that rate-limits API requests per IP.
