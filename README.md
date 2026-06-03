@@ -1,6 +1,8 @@
 # Screws Box
 
+[![CI](https://github.com/richie-tt/screws-box/actions/workflows/ci.yml/badge.svg)](https://github.com/richie-tt/screws-box/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/richie-tt/screws-box/branch/master/graph/badge.svg)](https://codecov.io/gh/richie-tt/screws-box)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
 A web application for managing hardware organizer boxes. Quickly find which container holds your screws, bolts, washers, and other small parts.
 

@@ -1,0 +1,123 @@
+name: Release
+
+# screws-box release pipeline — release-please + container build + attestation.
+# Replaces the former hand-rolled bash version-bump / tag / GitHub-release logic.
+#
+# Phase 1 (job `release-please`): on every push to master, release-please scans
+# Conventional Commits since the last tag and either opens/updates a "Release PR",
+# or — when that Release PR is merged — pushes the vX.Y.Z tag, updates CHANGELOG.md,
+# the version marker in cmd/screwsbox/main.go and .release-please-manifest.json, and
+# creates the GitHub Release.
+#
+# Phase 2 (job `release-image`): only when Phase 1 cut a release in this run, build
+# the container image, push it to ghcr tagged with the new version + latest, and
+# attach a signed SLSA build-provenance attestation to the pushed image digest.
+#
+# GitHub App token: release-please authenticates as a GitHub App (secrets
+# RELEASE_BOT_APP_CLIENT_ID / RELEASE_BOT_APP_PRIVATE_KEY) so its Release PR
+# cascades ci.yml. A PR opened with the default GITHUB_TOKEN does NOT trigger
+# pull_request workflows (GitHub anti-loop guard), so the required `validate / *`
+# checks would never run and the branch ruleset would block the Release PR forever.
+# Phase 2 needs no App token — it pushes to ghcr with GITHUB_TOKEN and signs via OIDC.
+#
+# All third-party actions are pinned to a 40-char commit SHA; the `# vX.Y.Z` comment
+# is a Dependabot hint, not consulted by the runner. No untrusted event-payload
+# value reaches a run: step.
+
+on:
+  push:
+    branches: [master]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  release-please:
+    name: release-please
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # push tag + create release + commit CHANGELOG/version/manifest
+      pull-requests: write # open/update the Release PR
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
+    steps:
+      # Mint a short-lived token from the release-bot GitHub App so the Release PR
+      # cascades ci.yml (default GITHUB_TOKEN would not — anti-loop guard).
+      - name: Mint GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          client-id: ${{ secrets.RELEASE_BOT_APP_CLIENT_ID }}
+          private-key: ${{ secrets.RELEASE_BOT_APP_PRIVATE_KEY }}
+
+      - name: Run release-please
+        id: release
+        uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+
+  release-image:
+    name: release-image
+    needs: release-please
+    if: needs.release-please.outputs.release_created == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write # push image to ghcr
+      id-token: write # OIDC for keyless (Sigstore) signing of the attestation
+      attestations: write # write the provenance attestation
+    steps:
+      - name: Check out at the released tag
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.0
+        with:
+          ref: ${{ needs.release-please.outputs.tag_name }}
+          persist-credentials: false
+
+      - name: Log in to ghcr
+        uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4.0.0
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Docker metadata
+        id: meta
+        uses: docker/metadata-action@80c7e94dd9b9319bd5eb7a0e0fe9291e23a2a2e9 # v6.0.1
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=${{ needs.release-please.outputs.tag_name }}
+            type=raw,value=latest
+
+      # provenance: false disables build-push-action's own unsigned in-toto
+      # provenance manifest; the signed attestation below is the source of truth.
+      - name: Build and push image
+        id: build
+        uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf # v7.0.0
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          provenance: false
+          build-args: |
+            VERSION=${{ needs.release-please.outputs.tag_name }}
+
+      # Sign + attach SLSA build provenance to the pushed image by digest.
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@a2bbfa25375fe432b6a289bc6b6cd05ecd0c4c32 # v4.1.0
+        with:
+          subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          subject-digest: ${{ steps.build.outputs.digest }}
+          push-to-registry: true

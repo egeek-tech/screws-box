@@ -1,0 +1,30 @@
+name: CI
+
+# Renamed from the former "PR" workflow. Now runs on push to master too (not just
+# PRs) so master is validated on every commit and the README badge reflects master.
+#
+# The single `validate` job calls the reusable _validate.yml. Its job id MUST stay
+# `validate`: the master ruleset's required status checks are named
+# `validate / lint`, `validate / test`, `validate / coverage`, `validate / build`
+# (and now `validate / vuln`) — i.e. `<job-id> / <reusable-job>`. Renaming the job
+# would silently stop satisfying those required checks.
+#
+# No paths-ignore on purpose: with required checks, a docs-only PR that skipped CI
+# would never post the required contexts and would stay blocked.
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    uses: ./.github/workflows/_validate.yml
+    secrets: inherit
