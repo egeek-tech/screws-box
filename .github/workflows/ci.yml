@@ -1,13 +1,24 @@
 name: CI
 
-# Renamed from the former "PR" workflow. Now runs on push to master too (not just
-# PRs) so master is validated on every commit and the README badge reflects master.
+# Renamed from the former "PR" workflow. Runs on push to master too (not just PRs)
+# so master is validated on every commit and the README badge reflects master.
 #
-# The single `validate` job calls the reusable _validate.yml. Its job id MUST stay
-# `validate`: the master ruleset's required status checks are named
-# `validate / lint`, `validate / test`, `validate / coverage`, `validate / build`
-# (and now `validate / vuln`) — i.e. `<job-id> / <reusable-job>`. Renaming the job
-# would silently stop satisfying those required checks.
+# The validation jobs (lint / test / coverage / build / vulnerability) are defined
+# directly in this workflow. They previously lived in a reusable `_validate.yml`
+# called via a single `validate` job, which surfaced the checks as `validate / lint`,
+# `validate / test`, etc. — GitHub prefixes a reusable workflow's jobs with the
+# caller job's id (`<caller-job> / <reusable-job>`). Inlining them removes that
+# indirection so the checks now appear as bare `lint`, `test`, `coverage`, `build`,
+# `vulnerability`.
+#
+# IMPORTANT — branch ruleset: the master ruleset's required status checks must match
+# these names EXACTLY. After this change, update the ruleset's required checks:
+#   validate / lint     -> lint
+#   validate / test     -> test
+#   validate / coverage -> coverage
+#   validate / build    -> build
+#   validate / vuln     -> vulnerability
+# Otherwise PRs stay blocked forever waiting on contexts that will never post again.
 #
 # No paths-ignore on purpose: with required checks, a docs-only PR that skipped CI
 # would never post the required contexts and would stay blocked.
@@ -25,6 +36,125 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  validate:
-    uses: ./.github/workflows/_validate.yml
-    secrets: inherit
+  lint:
+    name: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.0
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.0.0
+        with:
+          go-version-file: go.mod
+
+      - name: Install golangci-lint
+        env:
+          GOLANGCI_LINT_VERSION: v2.11.4
+          GOLANGCI_LINT_SHA256: 200c5b7503f67b59a6743ccf32133026c174e272b930ee79aa2aa6f37aca7ef1
+        run: |
+          tarball="golangci-lint-${GOLANGCI_LINT_VERSION#v}-linux-amd64.tar.gz"
+          curl -fsSL -o "$tarball" "https://github.com/golangci/golangci-lint/releases/download/${GOLANGCI_LINT_VERSION}/${tarball}"
+          echo "${GOLANGCI_LINT_SHA256}  ${tarball}" | sha256sum -c -
+          tar -xzf "$tarball"
+          sudo install -m 0755 "${tarball%.tar.gz}/golangci-lint" /usr/local/bin/golangci-lint
+          rm -rf "$tarball" "${tarball%.tar.gz}"
+
+      - name: Install hadolint
+        env:
+          HADOLINT_VERSION: v2.12.0
+          HADOLINT_SHA256: 56de6d5e5ec427e17b74fa48d51271c7fc0d61244bf5c90e828aab8362d55010
+        run: |
+          curl -fsSL -o hadolint "https://github.com/hadolint/hadolint/releases/download/${HADOLINT_VERSION}/hadolint-Linux-x86_64"
+          echo "${HADOLINT_SHA256}  hadolint" | sha256sum -c -
+          chmod +x hadolint
+          sudo mv hadolint /usr/local/bin/
+
+      - name: Run pre-commit
+        env:
+          PRE_COMMIT_VERSION: 4.6.0
+        run: |
+          python3 -m pip install --user "pre-commit==${PRE_COMMIT_VERSION}"
+          python3 -m pre_commit run --all-files --show-diff-on-failure --color=always
+
+  test:
+    name: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.0
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.0.0
+        with:
+          go-version-file: go.mod
+
+      - name: Run tests
+        run: go test ./... -count=1 -race -shuffle=on
+
+  coverage:
+    name: coverage
+    runs-on: ubuntu-latest
+    env:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.0
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.0.0
+        with:
+          go-version-file: go.mod
+
+      - name: Generate coverage profile
+        run: go test ./... -count=1 -coverprofile=coverage.txt -covermode=atomic
+
+      - name: Upload coverage to Codecov
+        if: env.CODECOV_TOKEN != ''
+        uses: codecov/codecov-action@e79a6962e0d4c0c17b229090214935d2e33f8354 # v6.0.1
+        with:
+          token: ${{ env.CODECOV_TOKEN }}
+          files: coverage.txt
+          fail_ci_if_error: true
+
+  build:
+    name: build
+    runs-on: ubuntu-latest
+    needs: [lint, test, coverage]
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.0
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.0.0
+        with:
+          go-version-file: go.mod
+
+      - name: Build binary
+        run: go build -ldflags="-s -w" ./cmd/screwsbox
+
+  vulnerability:
+    name: vulnerability
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.0
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.0.0
+        with:
+          go-version-file: go.mod
+
+      # govulncheck scans dependencies + the Go stdlib for known advisories.
+      # Inlined (go install) rather than the golang/govulncheck-action composite,
+      # which transitively uses tag-pinned actions. Surfaces as the `vulnerability`
+      # check; add it to the master ruleset's required checks to make it blocking.
+      #
+      # NOTE: stdlib advisories are gated on the Go toolchain version, which setup-go
+      # derives from go.mod's `go` directive. Keep that directive on a patched patch
+      # release (see go.mod) or this job flags fixed-in-newer-Go stdlib CVEs.
+      - name: Install govulncheck
+        run: go install golang.org/x/vuln/cmd/govulncheck@latest
+
+      - name: Run govulncheck
+        run: govulncheck ./...
