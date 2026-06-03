@@ -1,5 +1,12 @@
 # CI Pipeline Split Implementation Plan
 
+> **Historical document (2026-04-27), since superseded.** The CI structure described below
+> has changed: the reusable `_validate.yml` was inlined into `.github/workflows/ci.yml`;
+> `pr.yml` and `release.yml` were replaced by `ci.yml` + `release-please.yml`; the required
+> checks are now bare (`lint`, `test`, `coverage`, `build`, `vulnerability`); and the repo
+> moved to `egeek-tech/screws-box`. Kept as a point-in-time record. Filenames, check names,
+> and URLs in this document are not current.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Split the monolithic `Pre-commit checks` job into four focused, parallelizable jobs (lint, test, coverage, build) defined once in a reusable workflow and called by both PR and Release workflows. Wire coverage to Codecov. Add a coverage badge to the README.

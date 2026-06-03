@@ -9,10 +9,9 @@
 Run the latest release from GitHub Container Registry:
 
 ```bash
-docker run -p 8080:8080 ghcr.io/richie-tt/screws-box:latest
+docker run -p 8080:8080 ghcr.io/egeek-tech/screws-box:latest
 ```
 
-<!-- VERIFY: ghcr.io/richie-tt/screws-box:latest — confirm current image tag exists in GHCR -->
 
 To persist data, mount a volume for the SQLite database:
 
@@ -20,7 +19,7 @@ To persist data, mount a volume for the SQLite database:
 docker run -p 8080:8080 \
   -v $(pwd)/data:/data \
   -e DB_PATH=/data/screws_box.db \
-  ghcr.io/richie-tt/screws-box:latest
+  ghcr.io/egeek-tech/screws-box:latest
 ```
 
 ### Docker Compose
@@ -125,14 +124,12 @@ journalctl -u screws-box -f
 
 ## CI/CD Release Pipeline
 
-The GitHub Actions release workflow (`.github/workflows/release.yml`) runs on push to `master`:
+Releases are managed by [release-please](https://github.com/googleapis/release-please)
+(`.github/workflows/release-please.yml`), which runs on push to `master`:
 
-1. Pre-commit checks + build + test
-2. **Auto-versioning**: scans commits since last tag -- `feat:` bumps minor, `fix:` bumps patch, no matching prefix skips the release
-3. **GitHub Release**: creates a git tag, generates a changelog, publishes a GitHub release
-4. **Docker image**: builds and pushes to `ghcr.io/{repo}` with both the version tag and `latest`
-
-<!-- VERIFY: Confirm the GHCR repository path matches the actual GitHub repository owner/name -->
+1. **release-please**: scans Conventional Commits since the last tag and opens/updates a **Release PR** (`feat:` bumps minor, `fix:` bumps patch, `BREAKING CHANGE:` bumps major).
+2. Merging the Release PR pushes the `vX.Y.Z` tag, updates the changelog and the version marker, and publishes the GitHub Release.
+3. **Docker image**: on a cut release, builds and pushes to `ghcr.io/egeek-tech/screws-box` with both the version tag and `latest`, plus a signed build-provenance attestation.
 
 ## Reverse Proxy
 

@@ -12,4 +12,6 @@ screws_box.db-*
 screws-box
 screwsbox
 coverage.out
+coverage.txt
+sbom.json
 .superpowers

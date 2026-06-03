@@ -145,10 +145,9 @@ docker run -p 8080:8080 \
   -v $(pwd)/data:/data \
   -e DB_PATH=/data/screws_box.db \
   -e SESSION_TTL=72h \
-  ghcr.io/richie-tt/screws-box:latest
+  ghcr.io/egeek-tech/screws-box:latest
 ```
 
-<!-- VERIFY: ghcr.io/richie-tt/screws-box:latest — confirm current image tag in CI/release workflow -->
 
 ## HTTP Server Timeouts
 
