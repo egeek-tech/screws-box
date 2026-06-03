@@ -162,6 +162,38 @@ func TestParseSessionTTL(t *testing.T) {
 	}
 }
 
+func TestParseTrustedProxyCIDRs(t *testing.T) {
+	tests := []struct {
+		name    string
+		env     string
+		want    []string
+		wantErr string // substring expected in the error; "" means no error
+	}{
+		{name: "unset returns nil", env: "", want: nil},
+		{name: "single valid CIDR", env: "10.0.0.0/8", want: []string{"10.0.0.0/8"}},
+		{name: "multiple CIDRs with surrounding whitespace", env: " 127.0.0.1/32 , 10.0.0.0/8 ", want: []string{"127.0.0.1/32", "10.0.0.0/8"}},
+		{name: "empty entries between commas are skipped", env: "10.0.0.0/8,,127.0.0.1/32", want: []string{"10.0.0.0/8", "127.0.0.1/32"}},
+		{name: "only commas and spaces returns nil", env: " , , ", want: nil},
+		{name: "IPv6 CIDR", env: "2001:db8::/32", want: []string{"2001:db8::/32"}},
+		{name: "invalid CIDR returns error naming the entry", env: "10.0.0.0/8,not-a-cidr", wantErr: "not-a-cidr"},
+		{name: "bare IP without prefix is invalid", env: "10.0.0.1", wantErr: "10.0.0.1"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Setenv("TRUSTED_PROXY_CIDR", tt.env)
+			got, err := parseTrustedProxyCIDRs()
+			if tt.wantErr != "" {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), tt.wantErr)
+				assert.Nil(t, got)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
 func TestSanitizeLogValue(t *testing.T) {
 	tests := []struct {
 		name  string

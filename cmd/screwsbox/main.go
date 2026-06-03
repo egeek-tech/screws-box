@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"net/netip"
 	"os"
 	"os/signal"
 	"screws-box/internal/model"
@@ -78,6 +79,29 @@ func parseSessionTTL() time.Duration {
 	return d
 }
 
+// parseTrustedProxyCIDRs reads the comma-separated TRUSTED_PROXY_CIDR env var.
+// Returns nil when unset (the server then uses the direct connection IP). Every
+// entry must be a valid CIDR; an invalid one fails loud rather than silently
+// weakening client-IP trust.
+func parseTrustedProxyCIDRs() ([]string, error) {
+	raw := os.Getenv("TRUSTED_PROXY_CIDR")
+	if raw == "" {
+		return nil, nil
+	}
+	var cidrs []string
+	for _, part := range strings.Split(raw, ",") {
+		p := strings.TrimSpace(part)
+		if p == "" {
+			continue
+		}
+		if _, err := netip.ParsePrefix(p); err != nil {
+			return nil, fmt.Errorf("invalid TRUSTED_PROXY_CIDR entry %q: %w", sanitizeLogValue(p), err)
+		}
+		cidrs = append(cidrs, p)
+	}
+	return cidrs, nil
+}
+
 func run() error {
 	ctx, stop := signal.NotifyContext(context.Background(),
 		syscall.SIGINT, syscall.SIGTERM)
@@ -118,7 +142,17 @@ func run() error {
 	}
 	sessionMgr := session.NewManager(sessionStore, sessionTTL, storeType)
 
-	appSrv := server.NewServer(&s, sessionMgr, version)
+	trustedProxyCIDRs, err := parseTrustedProxyCIDRs()
+	if err != nil {
+		return err
+	}
+	if len(trustedProxyCIDRs) > 0 {
+		slog.Info("trusting reverse-proxy headers for client IP", "trusted_proxy_cidrs", trustedProxyCIDRs) //nolint:gosec // CIDRs validated above, operator-supplied
+	} else {
+		slog.Info("no TRUSTED_PROXY_CIDR set; using direct connection IP for client identification")
+	}
+
+	appSrv := server.NewServer(&s, sessionMgr, version, server.WithTrustedProxyCIDRs(trustedProxyCIDRs))
 
 	port := os.Getenv("PORT")
 	if port == "" {
