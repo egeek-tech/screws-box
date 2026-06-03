@@ -12,6 +12,7 @@ Screws Box is configured entirely through environment variables. There is no con
 | `DB_PATH` | No | `./screws_box.db` | Path to SQLite database file |
 | `SESSION_TTL` | No | `24h` | Session expiry duration (Go duration format: `1h`, `30m`, `72h`) |
 | `REDIS_URL` | No | _(none)_ | Redis connection URL for session storage (e.g., `redis://localhost:6379`) |
+| `TRUSTED_PROXY_CIDR` | No | _(none)_ | Comma-separated reverse-proxy IP ranges (CIDRs, e.g. `10.0.0.0/8,127.0.0.1/32`). When set, the client IP for rate limiting and logging is read from `X-Forwarded-For` (skipping these trusted hops); when unset, the direct connection IP is used. An invalid CIDR aborts startup. |
 | `OIDC_ISSUER` | No | _(none)_ | OIDC provider issuer URL |
 | `OIDC_CLIENT_ID` | No | _(none)_ | OIDC client identifier |
 | `OIDC_CLIENT_SECRET` | No | _(none)_ | OIDC client secret |
