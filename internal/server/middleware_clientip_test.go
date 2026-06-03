@@ -53,3 +53,32 @@ func TestClientIP_FallbackToRemoteAddr(t *testing.T) {
 	req.RemoteAddr = "192.0.2.55:1111"
 	assert.Equal(t, "192.0.2.55", clientIP(req))
 }
+
+// When RemoteAddr has no host:port form (no middleware ran), clientIP returns it
+// verbatim rather than dropping it.
+func TestClientIP_FallbackRemoteAddrWithoutPort(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req.RemoteAddr = "bare-no-port"
+	assert.Equal(t, "bare-no-port", clientIP(req))
+}
+
+// WithTrustedProxyCIDRs is applied by NewServer and selects XFF extraction.
+func TestWithTrustedProxyCIDRs(t *testing.T) {
+	plain := NewServer(nil, nil, "test")
+	assert.Nil(t, plain.trustedProxyCIDRs)
+
+	srv := NewServer(nil, nil, "test", WithTrustedProxyCIDRs([]string{"10.0.0.0/8"}))
+	assert.Equal(t, []string{"10.0.0.0/8"}, srv.trustedProxyCIDRs)
+
+	// The option must actually drive extraction: a client behind the declared
+	// proxy is read from X-Forwarded-For.
+	var got string
+	h := srv.clientIPMiddleware()(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
+		got = clientIP(r)
+	}))
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req.RemoteAddr = "10.0.0.1:443"
+	req.Header.Set("X-Forwarded-For", "198.51.100.23")
+	h.ServeHTTP(httptest.NewRecorder(), req)
+	assert.Equal(t, "198.51.100.23", got)
+}
