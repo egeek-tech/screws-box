@@ -1,0 +1,60 @@
+name: Feature request
+description: Suggest a new capability, option, or improvement.
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the idea. The strongest requests start from a concrete problem
+        ("I need to do X and currently can't") rather than a solution — that lets us
+        weigh alternatives we might not have thought of.
+
+  - type: checkboxes
+    id: preflight
+    attributes:
+      label: Pre-submission checklist
+      options:
+        - label: I searched existing issues and this has not already been requested.
+          required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem / use case
+      description: What are you trying to do, and what stops you today?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposed
+    attributes:
+      label: Proposed solution
+      description: Optional. What you have in mind — a UI change, a new option, an endpoint, etc.
+    validations:
+      required: false
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Workarounds you have tried, or other designs you weighed.
+    validations:
+      required: false
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Grid / UI
+        - Search & tags
+        - Containers & items
+        - Admin panel
+        - Authentication / OIDC
+        - Sessions
+        - Import / Export
+        - Deployment / Docker
+        - Other
+    validations:
+      required: true

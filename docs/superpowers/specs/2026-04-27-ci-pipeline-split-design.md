@@ -4,6 +4,13 @@
 **Date:** 2026-04-27
 **Author:** Robert Tkocz (with Claude)
 
+> **Historical document (2026-04-27), since superseded.** The CI structure described below
+> has changed: the reusable `_validate.yml` was inlined into `.github/workflows/ci.yml`;
+> `pr.yml` and `release.yml` were replaced by `ci.yml` + `release-please.yml`; the required
+> checks are now bare (`lint`, `test`, `coverage`, `build`, `vulnerability`); and the repo
+> moved to `egeek-tech/screws-box`. Kept as a point-in-time record. Filenames, check names,
+> and URLs in this document are not current.
+
 ## Context
 
 Today the project has two GitHub Actions workflows:

@@ -1,10 +1,15 @@
-# Default owner — required reviewer for every PR
-* @richie-tt
+# screws-box code ownership.
+#
+# GitHub auto-requests review from the listed owner(s) for every PR that
+# touches a matching path; the master ruleset can additionally require a
+# code-owner approval. Patterns follow .gitignore syntax and the LAST matching
+# pattern wins.
+#
+# The repository lives under the `egeek-tech` organization. A bare org handle
+# (`@egeek-tech`) is rejected by GitHub's CODEOWNERS validator ("Unknown
+# owner"), so ownership is assigned to a team. Membership is managed at
+# https://github.com/orgs/egeek-tech/teams/security-manager — add members there
+# rather than editing this file.
 
-# Workflow & supply-chain config require owner review
-/.github/                @richie-tt
-/Dockerfile              @richie-tt
-/docker-compose.yml      @richie-tt
-/.pre-commit-config.yaml @richie-tt
-/go.mod                  @richie-tt
-/go.sum                  @richie-tt
+# Catch-all — owns every path in the repo.
+* @egeek-tech/security-manager

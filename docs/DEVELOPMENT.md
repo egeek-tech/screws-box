@@ -86,21 +86,30 @@ See [docs/TESTING.md](TESTING.md) for test architecture and coverage details.
 
 ## CI Pipeline
 
-GitHub Actions runs on pull requests to `master` (`.github/workflows/ci.yml`):
+GitHub Actions runs on pull requests to `master` and on push to `master`
+(`.github/workflows/ci.yml`):
 
-1. **Pre-commit checks** -- same hooks as local development
-2. **Build and test** -- `go build` + `go test ./... -count=1`
+1. **lint** -- all pre-commit hooks (gofmt, golangci-lint, hadolint, actionlint, go mod tidy)
+2. **test** -- `go test ./... -count=1 -race -shuffle=on`
+3. **coverage** -- coverage profile, uploaded to Codecov
+4. **build** -- compiles the server binary
+5. **vulnerability** -- `govulncheck ./...` against dependencies and the Go standard library
 
-CI skips for changes to `LICENSE`, `*.md`, `assets/**`, `.vscode/**`.
+There is no `paths-ignore`: the branch ruleset's required checks must always post, so
+every PR runs the full set.
 
 ## Release Pipeline
 
-On push to `master` (`.github/workflows/release.yml`):
+Releases are managed by [release-please](https://github.com/googleapis/release-please)
+(`.github/workflows/release-please.yml`), which runs on push to `master`:
 
-1. Pre-commit + build + test (same as CI)
-2. **Auto-versioning** -- scans commit messages since last tag: `feat:` bumps minor, `fix:` bumps patch
-3. **GitHub Release** -- creates tag, generates changelog, publishes release
-4. **Docker image** -- builds and pushes to `ghcr.io/{repo}` with version tag + `latest`
+1. **release-please** -- scans Conventional Commits since the last tag and opens or updates
+   a **Release PR** (`feat:` bumps minor, `fix:` bumps patch, `BREAKING CHANGE:` bumps major).
+2. Merging the Release PR pushes the `vX.Y.Z` tag, updates `CHANGELOG.md` and the version
+   marker in `cmd/screwsbox/main.go`, and creates the GitHub Release.
+3. **release-image** -- on a cut release, builds and pushes the image to
+   `ghcr.io/egeek-tech/screws-box` (version tag + `latest`) and attaches a signed SLSA
+   build-provenance attestation.
 
 Version is injected into the binary via `-X main.version=${VERSION}` at Docker build time.
 

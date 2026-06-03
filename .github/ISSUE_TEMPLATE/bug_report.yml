@@ -1,0 +1,126 @@
+name: Bug report
+description: Report incorrect behavior, a crash, wrong data, or an unexpected error in Screws Box.
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a bug. Clear steps to reproduce are the
+        single most useful thing you can provide — they usually turn a multi-day
+        back-and-forth into a same-day fix.
+
+  - type: checkboxes
+    id: preflight
+    attributes:
+      label: Pre-submission checklist
+      options:
+        - label: I searched existing issues and this has not already been reported.
+          required: true
+        - label: I reproduced this on the latest released version.
+          required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: The release tag or Docker image tag you are running.
+      placeholder: v1.10.0
+    validations:
+      required: true
+
+  - type: dropdown
+    id: how-running
+    attributes:
+      label: How are you running it?
+      options:
+        - Prebuilt container image (ghcr.io/egeek-tech/screws-box)
+        - Docker Compose
+        - Prebuilt binary
+        - Built from source
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Affected area
+      options:
+        - Grid / UI
+        - Search
+        - Containers & items
+        - Tags
+        - Admin panel
+        - Authentication (local admin)
+        - OIDC login
+        - Sessions (in-memory / Redis)
+        - Import / Export
+        - Database (SQLite)
+        - Deployment / Docker
+        - CLI (--disable-auth)
+        - Other / not sure
+    validations:
+      required: true
+
+  - type: dropdown
+    id: session-backend
+    attributes:
+      label: Session backend
+      description: Relevant for login/session issues.
+      options:
+        - In-memory (no REDIS_URL set)
+        - Redis
+        - Not sure / not relevant
+    validations:
+      required: false
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: Describe the actual behavior, including any error message shown in the UI or logs.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What did you expect to happen instead?
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: A numbered list of steps that triggers the bug.
+      placeholder: |
+        1. Open the grid and click cell "3B"
+        2. Add an item with tag "m6"
+        3. Search for "m6"
+        4. ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: config
+    attributes:
+      label: Relevant configuration
+      description: "Non-default environment variables in play. REDACT secrets — never paste OIDC_CLIENT_SECRET, *.key, or passwords."
+      render: shell
+      placeholder: |
+        REDIS_URL=redis://redis:6379
+        OIDC_ISSUER=https://id.example.com
+        SESSION_TTL=72h
+    validations:
+      required: false
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs
+      description: "Optional server log output (slog text lines). Redact anything sensitive."
+      render: shell
+    validations:
+      required: false
