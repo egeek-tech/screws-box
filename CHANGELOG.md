@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.10.2](https://github.com/egeek-tech/screws-box/compare/v1.10.1...v1.10.2) (2026-06-09)
+
+
+### Dependencies
+
+* bump codecov/codecov-action from 6.0.1 to 7.0.0 ([05c6855](https://github.com/egeek-tech/screws-box/commit/05c685572262964d47154aeee3c560c77436e274))
+* bump modernc.org/sqlite from 1.51.0 to 1.52.0 ([94e16bc](https://github.com/egeek-tech/screws-box/commit/94e16bc4e747511cfeea47f3fe6876f97a079dd1))
+
 ## [1.10.1](https://github.com/egeek-tech/screws-box/compare/v1.10.0...v1.10.1) (2026-06-03)
 
 
