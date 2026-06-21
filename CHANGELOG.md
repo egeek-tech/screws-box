@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.10.3](https://github.com/egeek-tech/screws-box/compare/v1.10.2...v1.10.3) (2026-06-21)
+
+
+### Dependencies
+
+* bump actions/checkout from 6.0.3 to 7.0.0 ([ad97140](https://github.com/egeek-tech/screws-box/commit/ad97140ec77eec0431e686ff424a4e403b92c44d))
+* bump github.com/coreos/go-oidc/v3 from 3.18.0 to 3.19.0 ([0962afa](https://github.com/egeek-tech/screws-box/commit/0962afa0834dec90632406da2c318f84f3068128))
+* bump github.com/redis/go-redis/v9 from 9.20.0 to 9.20.1 ([d058688](https://github.com/egeek-tech/screws-box/commit/d058688e6933822c201cb229a6476ab3681bcf5c))
+* bump golang from `f23e8b2` to `7a3e500` ([2920d28](https://github.com/egeek-tech/screws-box/commit/2920d284158e363ff60bed3f06f577552e56da76))
+* bump golang.org/x/crypto from 0.52.0 to 0.53.0 ([520df46](https://github.com/egeek-tech/screws-box/commit/520df4684fe3abf9b757059a9c5d08fcc9078278))
+
 ## [1.10.2](https://github.com/egeek-tech/screws-box/compare/v1.10.1...v1.10.2) (2026-06-09)
 
 
