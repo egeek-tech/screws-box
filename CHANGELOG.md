@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.10.7](https://github.com/egeek-tech/screws-box/compare/v1.10.6...v1.10.7) (2026-09-23)
+
+
+### Bug Fixes
+
+* bump Go toolchain to 1.27.1 to clear stdlib advisories ([159cc6e](https://github.com/egeek-tech/screws-box/commit/159cc6ec5fe9f8f0d2d409215f20df6284b1501e))
+* bump Go toolchain to 1.27.1 to clear stdlib advisories ([77fb1c8](https://github.com/egeek-tech/screws-box/commit/77fb1c851e9e2783888cffe0f77ee437061dc8d3))
+
+
+### Dependencies
+
+* Bump actions/attest-build-provenance from 4.1.1 to 4.2.2 ([c9cae0b](https://github.com/egeek-tech/screws-box/commit/c9cae0b2509283a6bf9c71f2a4d10b738fcdbbbc))
+* bump all Go modules to latest ([d64ed3c](https://github.com/egeek-tech/screws-box/commit/d64ed3c7484376f6c1f2e63147a80598a89ddd7a))
+
 ## [1.10.6](https://github.com/egeek-tech/screws-box/compare/v1.10.5...v1.10.6) (2026-07-20)
 
 
