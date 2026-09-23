@@ -4,9 +4,9 @@
 
 ## Prerequisites
 
-- Go 1.22+ (the project uses Go 1.26.1)
+- Go 1.27.1+ (matches the `go` directive in [`go.mod`](../go.mod))
 - [pre-commit](https://pre-commit.com/) (optional but recommended -- CI enforces the same checks)
-- [golangci-lint](https://golangci-lint.run/) v2.11+
+- [golangci-lint](https://golangci-lint.run/) v2.13+
 - [hadolint](https://github.com/hadolint/hadolint) (Dockerfile linting, used by pre-commit)
 
 ## Building

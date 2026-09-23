@@ -132,6 +132,6 @@ All tables use `INTEGER PRIMARY KEY AUTOINCREMENT` and track `created_at` / `upd
 ## Build and Deployment
 
 - **Binary**: `CGO_ENABLED=0 go build -ldflags="-s -w -X main.version=..." -o screws-box ./cmd/screwsbox`
-- **Docker**: Multi-stage build (`golang:1.26-alpine` -> `scratch`), exposes port 8080
+- **Docker**: Multi-stage build (`golang:1.27-alpine` -> `scratch`), exposes port 8080
 - **Docker Compose**: Optional Redis profile for persistent sessions
 - **Version**: Injected at build time via `-X main.version`, defaults to `"dev"`

@@ -41,7 +41,7 @@ func randomHex(n int) string {
 // MakeStateCookieHTTP creates an http.Cookie for storing the encrypted state.
 // secure should be true when serving over HTTPS.
 func MakeStateCookieHTTP(value string, secure bool) *http.Cookie {
-	return &http.Cookie{
+	return &http.Cookie{ //nolint:gosec // G124: Secure is set from the request scheme, which gosec cannot prove is true
 		Name:     StateCookieName,
 		Value:    value,
 		Path:     "/",
@@ -54,7 +54,7 @@ func MakeStateCookieHTTP(value string, secure bool) *http.Cookie {
 
 // ClearStateCookieHTTP creates an http.Cookie that clears the state cookie.
 func ClearStateCookieHTTP(secure bool) *http.Cookie {
-	return &http.Cookie{
+	return &http.Cookie{ //nolint:gosec // G124: Secure is set from the request scheme, which gosec cannot prove is true
 		Name:     StateCookieName,
 		Value:    "",
 		Path:     "/",

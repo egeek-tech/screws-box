@@ -64,6 +64,9 @@ linters:
         use-field-name: true
     goconst:
       ignore-string-values:
+        # JSON response field names, not magic values worth a constant.
+        - "error"
+        - "errors"
         - "iqn.2025-01.com.example:initiator"
         - "/usr/sbin/iscsiadm"
         - "Yes"
@@ -77,6 +80,14 @@ linters:
       - common-false-positives
       - legacy
       - std-error-handling
+    rules:
+      # Tests repeat fixture literals ("bolt", "admin", column names) on purpose --
+      # naming them hurts readability. Test cookies omit Secure/HttpOnly/SameSite
+      # deliberately: they exercise parsing, they are never served to a client.
+      - path: _test\.go
+        linters:
+          - goconst
+          - gosec
     paths:
       - third_party$
       - builtin$
