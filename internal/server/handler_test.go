@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"path/filepath"
 	"screws-box/internal/model"
 	oidcpkg "screws-box/internal/oidc"
@@ -2418,6 +2419,75 @@ func TestOIDCStart_ConfigError(t *testing.T) {
 
 	assert.Equal(t, http.StatusFound, w.Code)
 	assert.Equal(t, "/login", w.Header().Get("Location"))
+}
+
+// The other handleOIDCStart tests all cover failure paths, so the success path --
+// the actual redirect to the provider -- was untested. It is also the line gosec
+// reports G710 (open redirect) on, so this pins down where the target comes from:
+// the authorization_endpoint in the provider's discovery document, reached via the
+// stored issuer URL. Nothing in the redirect target is derived from the request.
+func TestOIDCStart_RedirectsToProviderAuthEndpoint(t *testing.T) {
+	var idp *httptest.Server
+	mux := http.NewServeMux()
+	// handleOIDCStart only performs discovery; no token or JWKS call happens here.
+	mux.HandleFunc("/.well-known/openid-configuration", func(w http.ResponseWriter, _ *http.Request) {
+		_ = json.NewEncoder(w).Encode(map[string]any{ //nolint:errchkjson // test fixture; encode failure is impossible for this static map
+			"issuer":                                idp.URL,
+			"authorization_endpoint":                idp.URL + "/authorize",
+			"token_endpoint":                        idp.URL + "/token",
+			"jwks_uri":                              idp.URL + "/jwks",
+			"response_types_supported":              []string{"code"},
+			"subject_types_supported":               []string{"public"},
+			"id_token_signing_alg_values_supported": []string{"RS256"},
+		})
+	})
+	idp = httptest.NewServer(mux)
+	t.Cleanup(idp.Close)
+
+	ms := oidcEnabledStore()
+	ms.getOIDCConfigFn = func(_ context.Context) (*model.OIDCConfig, error) {
+		return &model.OIDCConfig{
+			Enabled:     true,
+			IssuerURL:   idp.URL,
+			ClientID:    "test-client",
+			DisplayName: "TestProvider",
+		}, nil
+	}
+	srv := newTestServerWithMock(t, ms)
+	router := srv.Router()
+
+	req := httptest.NewRequest(http.MethodGet, "/auth/oidc", nil)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	require.Equal(t, http.StatusFound, w.Code)
+	loc, err := url.Parse(w.Header().Get("Location"))
+	require.NoError(t, err)
+
+	idpURL, err := url.Parse(idp.URL)
+	require.NoError(t, err)
+	assert.Equal(t, idpURL.Host, loc.Host, "redirect must target the discovered provider host")
+	assert.Equal(t, "/authorize", loc.Path)
+
+	q := loc.Query()
+	assert.Equal(t, "test-client", q.Get("client_id"))
+	assert.Equal(t, "code", q.Get("response_type"))
+	assert.Equal(t, "S256", q.Get("code_challenge_method"))
+	assert.NotEmpty(t, q.Get("code_challenge"), "PKCE challenge must be present")
+	assert.NotEmpty(t, q.Get("state"))
+	assert.NotEmpty(t, q.Get("nonce"))
+
+	// The state cookie carries state/nonce/verifier for the callback to verify.
+	var stateCookie *http.Cookie
+	for _, c := range w.Result().Cookies() {
+		if c.Name == oidcpkg.StateCookieName {
+			stateCookie = c
+		}
+	}
+	require.NotNil(t, stateCookie, "state cookie must be set before redirecting")
+	assert.NotEmpty(t, stateCookie.Value)
+	assert.True(t, stateCookie.HttpOnly, "state cookie must be HttpOnly")
+	assert.Equal(t, http.SameSiteLaxMode, stateCookie.SameSite)
 }
 
 // --- handleUpdateOIDCConfig additional coverage ---

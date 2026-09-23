@@ -863,7 +863,10 @@ func (srv *Server) handleOIDCStart() http.HandlerFunc {
 		// Set state cookie and redirect to provider
 		http.SetCookie(w, oidcpkg.MakeStateCookieHTTP(cookieValue, isHTTPS(r)))
 		authURL := provider.AuthURL(state, nonce, verifier)
-		http.Redirect(w, r, authURL, http.StatusFound)
+		// G710 false positive: authURL targets the provider authorization endpoint from
+		// OIDC discovery against the stored cfg.IssuerURL -- server-side config, not request
+		// input. state/nonce/verifier are generated above.
+		http.Redirect(w, r, authURL, http.StatusFound) //nolint:gosec // G710: redirect target comes from server-side OIDC config
 	}
 }
 

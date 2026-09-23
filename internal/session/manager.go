@@ -66,7 +66,7 @@ func (m *Manager) CreateWithMethod(w http.ResponseWriter, r *http.Request, usern
 		return err
 	}
 	secure := isSecure(r)
-	http.SetCookie(w, &http.Cookie{
+	http.SetCookie(w, &http.Cookie{ //nolint:gosec // G124: Secure is set from the request scheme, which gosec cannot prove is true
 		Name:     CookieName,
 		Value:    sess.ID,
 		Path:     "/",
@@ -74,7 +74,7 @@ func (m *Manager) CreateWithMethod(w http.ResponseWriter, r *http.Request, usern
 		Secure:   secure,
 		SameSite: http.SameSiteLaxMode,
 	})
-	http.SetCookie(w, &http.Cookie{
+	http.SetCookie(w, &http.Cookie{ //nolint:gosec // G124: HttpOnly is false by design -- the double-submit CSRF token must be readable by JS
 		Name:     CSRFCookieName,
 		Value:    sess.CSRFToken,
 		Path:     "/",
@@ -94,11 +94,11 @@ func (m *Manager) Destroy(w http.ResponseWriter, r *http.Request) {
 		_ = m.store.Delete(r.Context(), c.Value)
 	}
 	for _, sec := range []bool{false, true} {
-		http.SetCookie(w, &http.Cookie{
+		http.SetCookie(w, &http.Cookie{ //nolint:gosec // G124: deletion cookie -- empty value, MaxAge -1, nothing to protect
 			Name: CookieName, Value: "", Path: "/",
 			MaxAge: -1, HttpOnly: true, Secure: sec,
 		})
-		http.SetCookie(w, &http.Cookie{
+		http.SetCookie(w, &http.Cookie{ //nolint:gosec // G124: deletion cookie -- empty value, MaxAge -1, nothing to protect
 			Name: CSRFCookieName, Value: "", Path: "/",
 			MaxAge: -1, Secure: sec,
 		})

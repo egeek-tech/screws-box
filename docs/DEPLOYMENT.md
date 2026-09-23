@@ -50,7 +50,7 @@ Without Redis, sessions are stored in memory and lost on container restart.
 ### Docker Image Details
 
 The Dockerfile uses a multi-stage build:
-1. **Build stage** (`golang:1.26-alpine`): Downloads dependencies, compiles with `CGO_ENABLED=0` and version injection via `-X main.version=${VERSION}`
+1. **Build stage** (`golang:1.27-alpine`): Downloads dependencies, compiles with `CGO_ENABLED=0` and version injection via `-X main.version=${VERSION}`
 2. **Runtime stage** (`scratch`): Contains only the binary and CA certificates
 
 The resulting image is minimal (no shell, no OS packages). The `VERSION` build arg is set by the CI release pipeline.
