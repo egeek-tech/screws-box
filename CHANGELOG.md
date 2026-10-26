@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.10.8](https://github.com/egeek-tech/screws-box/compare/v1.10.7...v1.10.8) (2026-10-26)
+
+
+### Bug Fixes
+
+* bump Go toolchain to 1.27.3 to clear stdlib advisories ([03e8d6b](https://github.com/egeek-tech/screws-box/commit/03e8d6b2538b1cc36427bc9eb7c09503fa45c585))
+* bump Go toolchain to 1.27.3 to clear stdlib advisories ([2c4e39f](https://github.com/egeek-tech/screws-box/commit/2c4e39f33fef938daa2149ace9bc48fd93535056))
+
+
+### Dependencies
+
+* Bump actions/create-github-app-token from 3.2.0 to 3.3.0 ([412246f](https://github.com/egeek-tech/screws-box/commit/412246fe46944e489345f07e3ff81cb18fd07d51))
+* Bump github.com/alicebob/miniredis/v2 from 2.39.0 to 2.40.0 ([7c9c832](https://github.com/egeek-tech/screws-box/commit/7c9c8322d3a99633a2406decb7bcf9d0fa04e1b8))
+* Bump github.com/go-chi/chi/v5 from 5.3.2 to 5.5.0 ([8409c95](https://github.com/egeek-tech/screws-box/commit/8409c952ecfa7be6c1cb65a4761d2225578e0eeb))
+* Bump github.com/redis/go-redis/v9 from 9.22.0 to 9.23.0 ([4b85be6](https://github.com/egeek-tech/screws-box/commit/4b85be69ac005644f0892f7254726d90ab8fd412))
+* Bump golang.org/x/crypto from 0.57.0 to 0.58.0 ([2aad0b7](https://github.com/egeek-tech/screws-box/commit/2aad0b7d52e08ea0c8d25e1fee270ec8854671e9))
+* Bump modernc.org/sqlite from 1.59.0 to 1.60.1 ([eee5a84](https://github.com/egeek-tech/screws-box/commit/eee5a84fc160f6ea1c6878fa41e75c85b6dc9106))
+
 ## [1.10.7](https://github.com/egeek-tech/screws-box/compare/v1.10.6...v1.10.7) (2026-09-23)
 
 
