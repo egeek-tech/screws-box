@@ -304,7 +304,7 @@ With Redis configured, sessions persist across application restarts. Without Red
 
 ### Prerequisites
 
-- Go 1.27.1+ (matches the `go` directive in [`go.mod`](./go.mod); older toolchains are refused)
+- Go 1.27.3+ (matches the `go` directive in [`go.mod`](./go.mod); older toolchains are refused)
 
 ### Build
 
