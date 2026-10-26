@@ -6,7 +6,7 @@ This guide walks you through running Screws Box locally from source and verifyin
 
 ## Prerequisites
 
-- **Go 1.27.1+** (matches the `go` directive in [`go.mod`](../go.mod); older toolchains are refused)
+- **Go 1.27.3+** (matches the `go` directive in [`go.mod`](../go.mod); older toolchains are refused)
 - **Git**
 
 No external databases or services are required. SQLite is embedded and sessions default to in-memory storage.
