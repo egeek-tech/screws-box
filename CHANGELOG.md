@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.10.9](https://github.com/egeek-tech/screws-box/compare/v1.10.8...v1.10.9) (2026-11-01)
+
+
+### Dependencies
+
+* Bump docker/login-action from 4.4.0 to 4.7.0 ([b32137d](https://github.com/egeek-tech/screws-box/commit/b32137dd3067336bfc89997b4c78a74ffb847b7f))
+* Bump modernc.org/sqlite from 1.60.1 to 1.61.0 ([a183629](https://github.com/egeek-tech/screws-box/commit/a1836294b40c0319cd18cc6b59ab820095ef1849))
+
 ## [1.10.8](https://github.com/egeek-tech/screws-box/compare/v1.10.7...v1.10.8) (2026-10-26)
 
 
